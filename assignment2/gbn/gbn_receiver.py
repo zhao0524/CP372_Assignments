@@ -1,3 +1,13 @@
+"""
+gbn_receiver.py — Go-Back-N receiver.
+
+Binds to 127.0.0.1:5001 and accepts packets from gbn_sender. Delivers
+chunks in strict sequence order (GBN semantics): out-of-order packets are
+discarded and the last in-order ACK is re-sent to trigger retransmission.
+Supports configurable packet loss simulation.
+
+Usage: python gbn_receiver.py <output_file> [loss_rate]
+"""
 import socket
 import sys
 import random
@@ -7,6 +17,12 @@ HOST = '127.0.0.1'
 PORT = 5001
 
 def receive_file(output_path, loss_rate=0.0):
+    """
+    Receive a file from gbn_sender and write it to output_path.
+
+    loss_rate: probability [0.0, 1.0] that any given incoming packet is dropped,
+               simulating network packet loss.
+    """
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind((HOST, PORT))
 

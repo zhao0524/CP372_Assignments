@@ -1,3 +1,14 @@
+"""
+saw_sender.py — Stop-and-Wait sender.
+
+Sends a file one 4096-byte chunk at a time over UDP, waiting for each ACK
+before transmitting the next packet (window size = 1). Connects to
+127.0.0.1:5002. Retransmits up to MAX_RETRIES times per packet on timeout
+or stale ACK.
+
+Usage: python saw_sender.py <input_file>
+Output: RESULT time=<s> throughput=<B/s> retransmissions=<n>
+"""
 import socket
 import time
 import sys
@@ -10,6 +21,12 @@ PORT = 5002
 MAX_RETRIES = 30
 
 def send_file(filepath):
+    """
+    Send a file using Stop-and-Wait over UDP.
+
+    Returns (elapsed_seconds, total_retransmissions).
+    Moves on after MAX_RETRIES failed attempts on a single packet.
+    """
     with open(filepath, 'rb') as f:
         raw = f.read()
 

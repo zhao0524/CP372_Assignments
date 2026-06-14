@@ -1,3 +1,13 @@
+"""
+gbn_sender.py — Go-Back-N sender.
+
+Splits a file into 4096-byte chunks and transmits them over UDP using a
+sliding window of size WINDOW_SIZE. On timeout, the entire unacknowledged
+window is retransmitted (Go-Back-N semantics). Connects to 127.0.0.1:5001.
+
+Usage: python gbn_sender.py <input_file>
+Output: RESULT time=<s> throughput=<B/s> retransmissions=<n>
+"""
 import socket
 import time
 import sys
@@ -11,6 +21,12 @@ PORT = 5001
 MAX_TIMEOUTS = 30       # abort after 30 consecutive timeouts with no progress
 
 def send_file(filepath):
+    """
+    Send a file using Go-Back-N over UDP.
+
+    Returns (elapsed_seconds, total_retransmissions).
+    Aborts early if MAX_TIMEOUTS consecutive timeouts occur with no progress.
+    """
     with open(filepath, 'rb') as f:
         raw = f.read()
 

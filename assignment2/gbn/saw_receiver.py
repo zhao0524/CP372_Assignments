@@ -1,3 +1,13 @@
+"""
+saw_receiver.py — Stop-and-Wait receiver.
+
+Binds to 127.0.0.1:5002 and accepts packets from saw_sender. Behaves
+identically to gbn_receiver but on a separate port so both protocols can
+run concurrently without conflict. Supports configurable packet loss
+simulation.
+
+Usage: python saw_receiver.py <output_file> [loss_rate]
+"""
 import socket
 import sys
 import random
@@ -7,6 +17,12 @@ HOST = '127.0.0.1'
 PORT = 5002
 
 def receive_file(output_path, loss_rate=0.0):
+    """
+    Receive a file from saw_sender and write it to output_path.
+
+    loss_rate: probability [0.0, 1.0] that any given incoming packet is dropped,
+               simulating network packet loss.
+    """
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind((HOST, PORT))
 

@@ -1,3 +1,15 @@
+"""
+performance.py — Automated experiment runner for GBN vs Stop-and-Wait.
+
+Runs every combination of protocol × file_size × loss_rate (5 trials each)
+and prints averaged results as CSV to stdout. Progress is logged to stderr.
+
+File sizes tested : 10KB, 50KB, 100KB, 500KB, 1MB, 5MB, 10MB, 50MB, 100MB
+Loss rates tested : 0%, 10%, 20%, 30%
+Protocols tested  : gbn, saw
+
+Usage: python performance.py > results.csv
+"""
 import subprocess
 import sys
 import os
@@ -20,10 +32,17 @@ TESTS = 5
 SENDER_TIMEOUT = 600   # seconds per test; large files at high loss can be slow
 
 def gen_file(path, size):
+    """Write `size` random bytes to `path`."""
     with open(path, 'wb') as f:
         f.write(os.urandom(size))
 
 def run_one(protocol, filepath, loss_rate):
+    """
+    Run one sender/receiver pair and return (time_s, throughput_Bps, retransmissions).
+
+    Spawns the receiver subprocess first, waits for it to bind, then runs the
+    sender. Returns None on timeout or if the sender output cannot be parsed.
+    """
     recv_script = 'gbn_receiver.py' if protocol == 'gbn' else 'saw_receiver.py'
     send_script = 'gbn_sender.py'   if protocol == 'gbn' else 'saw_sender.py'
     output = f'_recv_{protocol}.bin'
