@@ -43,6 +43,7 @@ def send_with_retry(sock, packet: bytes, expected_seq: int, label: str) -> bool:
         sock.sendto(packet, (SERVER_HOST, SERVER_PORT))
         print(f"  [TX] {label} seq={expected_seq}  (attempt {attempt})")
         sock.settimeout(TIMEOUT)
+
         try:
             raw, _ = sock.recvfrom(HEADER_SIZE + 16)
             result = parse_ack(raw)
@@ -56,57 +57,69 @@ def send_with_retry(sock, packet: bytes, expected_seq: int, label: str) -> bool:
     print(f"  [FAIL] Max retries reached for seq={expected_seq}")
     return False
 
-def transfer_file(filename: str = None):
-    # generate or read content
-    if filename:
-        with open(filename, 'rb') as f:
-            file_data = f.read()
-        print(f"[INFO] Reading '{filename}' ({len(file_data)} bytes)")
-    else:
-        # generate 200 randomly ordered words for content
-        words = ["network", "stop-and-wait", "protocol", "packet", "ACK",
-                 "timeout", "retransmit", "sequence", "reliable", "UDP"]
-        content = " ".join(random.choices(words, k=200)) + "\n"
-        file_data = content.encode('utf-8')
-        filename = "generated_content.txt"
-        print(f"[INFO] Generated {len(file_data)}-byte payload → '{filename}'")
+def transfer_data(size_mb: float):
+    total_bytes = int(size_mb * 1024 * 1024)
+
+    # Generate dummy payload
+    file_data = b'X' * total_bytes
+
+    print(f"[INFO] Generated {total_bytes:,} bytes ({size_mb} MB) of dummy data")
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-    # INIT packet 
+    # INIT packet
     print("\n[PHASE 1] Sending INIT …")
-    init_data = filename.encode('utf-8')
+    init_data = f"dummy_{size_mb}MB.bin".encode("utf-8")
     pkt = make_packet(TYPE_INIT, 0, init_data)
+
+    start = time.time()
     if not send_with_retry(sock, pkt, 0, "INIT"):
         print("[ERROR] INIT failed. Aborting.")
         sock.close()
         return
 
-    # DATA packets 
+    # DATA packets
     print("\n[PHASE 2] Sending DATA …")
-    chunks = [file_data[i:i + PACKET_SIZE]
-              for i in range(0, len(file_data), PACKET_SIZE)]
+
+    chunks = [
+        file_data[i:i + PACKET_SIZE]
+        for i in range(0, len(file_data), PACKET_SIZE)
+    ]
+
     seq = 1
     for i, chunk in enumerate(chunks):
         pkt = make_packet(TYPE_DATA, seq, chunk)
+
         label = f"DATA chunk {i+1}/{len(chunks)}"
+
         if not send_with_retry(sock, pkt, seq, label):
             print(f"[ERROR] Failed at chunk {i+1}. Aborting.")
             sock.close()
             return
-        seq = 1 - seq   # alternating bit: 0 ↔ 1
+
+        seq = 1 - seq  # alternating bit
 
     # FIN packet
     print("\n[PHASE 3] Sending FIN …")
+
     pkt = make_packet(TYPE_FIN, seq, b'')
+
     if not send_with_retry(sock, pkt, seq, "FIN"):
         print("[ERROR] FIN not ACK'd.")
     else:
-        print("\n[DONE] File transfer complete ✓")
+        print("\n[DONE] Transfer complete ✓")
 
     sock.close()
 
+    return time.time() - start
+
 if __name__ == '__main__':
     import sys
-    fname = sys.argv[1] if len(sys.argv) > 1 else None
-    transfer_file(fname)
+
+    if len(sys.argv) != 2:
+        print(f"Usage: python {sys.argv[0]} <size_mb>")
+        sys.exit(1)
+
+    size_mb = float(sys.argv[1])
+    time_taken = transfer_data(size_mb)
+    print("TIME_TAKEN: " + str(time_taken))
