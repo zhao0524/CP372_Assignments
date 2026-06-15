@@ -28,8 +28,9 @@ for mb in ["0.01", "0.05", "0.1", "0.5", "1", "5", "10", "50", "100"]:
                 text=True
             )
 
-            recv_out, recv_err = receive_result.communicate()
             send_out, send_err = send_result.communicate()
+            receive_result.terminate()
+            recv_out, recv_err = receive_result.communicate()
 
             print(send_out)
         #     total_time += float(send_out.split("time=")[1].split()[0])
