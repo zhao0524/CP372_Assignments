@@ -19,8 +19,8 @@ for mb in ["0.01", "0.05", "0.1", "0.5", "1", "5", "10", "50", "100"]:
                 text=True
             )
 
-            time.sleep(1)
-            # Run second script
+            time.sleep(0.5)
+
             send_result = subprocess.Popen(
                 [sys.executable, "sender_stopwait.py", *send_args],
                 stdout=subprocess.PIPE,
@@ -29,7 +29,6 @@ for mb in ["0.01", "0.05", "0.1", "0.5", "1", "5", "10", "50", "100"]:
             )
 
             send_out, send_err = send_result.communicate()
-            receive_result.terminate()
             recv_out, recv_err = receive_result.communicate()
 
             print(send_out)
