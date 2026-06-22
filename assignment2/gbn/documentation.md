@@ -1,6 +1,6 @@
 Run the automated test using:
 ```
-py runtests.py
+py runtests_gbn.py
 ```
 
 Or do a manual run in two terminals using the following commands:
