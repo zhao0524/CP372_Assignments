@@ -11,7 +11,7 @@ LISTEN_PORT = 5001
 OUTPUT_DIR  = './received_files'
 
 # part b (configurable loss rate) (py receiver_stopwait.py 0.2)
-LOSS_RATE   = 0.0   # 0%, 10%, 20%, 30% → 0.0, 0.1, 0.2, 0.3
+LOSS_RATE   = 0.0   # 0%, 10%, 20%, 30% -> 0.0, 0.1, 0.2, 0.3
 
 # packet types (must match sender file)
 TYPE_INIT   = 0
@@ -35,7 +35,7 @@ def parse_packet(raw: bytes):
     if len(data) != data_len:
         return None
     if checksum(data) != recv_ck:
-        print(f"  [CHECKSUM ERROR] seq={seq} – packet discarded")
+        print(f"  [CHECKSUM ERROR] seq={seq} - packet discarded")
         return None
     return pkt_type, seq, data
 
@@ -53,6 +53,7 @@ def should_drop() -> bool:
 def run_receiver():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.bind((LISTEN_HOST, LISTEN_PORT))
     print(f"[INFO] Receiver listening on {LISTEN_HOST}:{LISTEN_PORT}")
     print(f"[INFO] Loss rate = {LOSS_RATE*100:.0f}%")
@@ -83,7 +84,7 @@ def run_receiver():
         # duplicate / out-of-order detection 
         # Re-ACK the last packet if we receive a retransmission of it
         if pkt_type == last_pkt_type and seq == last_seq and pkt_type != TYPE_INIT:
-            print(f"  [DUP] Duplicate pkt type={pkt_type} seq={seq} – re-ACKing")
+            print(f"  [DUP] Duplicate pkt type={pkt_type} seq={seq} - re-ACKing")
             sock.sendto(make_ack(seq), addr)
             continue
 
@@ -98,7 +99,7 @@ def run_receiver():
             expected_seq = 1    # first DATA uses seq=1 (alternating from INIT seq=0)
             state = 'RECEIVING'
             last_pkt_type, last_seq = TYPE_INIT, 0
-            print(f"[INIT] New transfer: '{filename}' → '{filepath}'")
+            print(f"[INIT] New transfer: '{filename}' -> '{filepath}'")
             sock.sendto(make_ack(0), addr)
 
         # DATA 
@@ -107,8 +108,8 @@ def run_receiver():
                 print(f"  [WARN] DATA received outside RECEIVING state, ignoring")
                 continue
             if seq != expected_seq:
-                print(f"  [OUT-OF-ORDER] Expected seq={expected_seq}, got seq={seq} – discarding")
-                # Do NOT ACK – sender will timeout and retransmit
+                print(f"  [OUT-OF-ORDER] Expected seq={expected_seq}, got seq={seq} - discarding")
+                # Do NOT ACK - sender will timeout and retransmit
                 continue
             file_handle.write(data)
             print(f"  [DATA] seq={seq} ({len(data)} bytes) saved")
@@ -126,7 +127,7 @@ def run_receiver():
                 file_handle = None
             state = 'IDLE'
             last_pkt_type, last_seq = TYPE_FIN, seq
-            print(f"[FIN] Transfer complete – file saved as '{filepath}'")
+            print(f"[FIN] Transfer complete - file saved as '{filepath}'")
             sock.sendto(make_ack(seq), addr)
             print(f"\n[INFO] Ready for next transfer.\n")
 
